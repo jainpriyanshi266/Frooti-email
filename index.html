@@ -8,7 +8,7 @@
 <meta name="description" content="You have to see this.">
 <meta property="og:title" content="SHOCKING REALITY OF FROOTI!!">
 <meta property="og:description" content="You have to see this.">
-<meta property="og:image" content="assets/1.png">
+<meta property="og:image" content="1.png">
 <style>
 * { box-sizing:border-box; }
 html, body { margin:0; height:100%; background:#141414; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; overscroll-behavior:none; }
@@ -120,7 +120,7 @@ const ASSET_OVERRIDE = {};  // preview: blob URLs; published: {}
 const TRANSITIONS = ["fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade"]; // per-slide transition
 const HOTSPOTS = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[{"x":49.3017,"y":66.2279,"w":37.7095,"h":18.3338,"url":"https://www.satviclife.org/"}],[{"x":34.2179,"y":53.5924,"w":46.0894,"h":22.2979,"url":"","share":true}]];      // per-slide array of {x,y,w,h,url} in %
 const SHARE = { title: "SHOCKING REALITY OF FROOTI!!" };
-const src = f => ASSET_OVERRIDE[f] || ('assets/' + f);
+const src = f => ASSET_OVERRIDE[f] || f;
 
 const SLIDES = FILES.map((f, i) => ({ img: f, t: TRANSITIONS[i] || 'fade', hotspots: HOTSPOTS[i] || [] }));
 
@@ -150,6 +150,7 @@ function showSlideImage(url, dir, t) {
   const front = $('slide-img-' + activeLayer);
   const back = $('slide-img-' + backKey);
   const run = () => {
+    document.querySelector('.placeholder').style.zIndex = '';
     resetLayer(back);
     back.style.zIndex = '6'; front.style.zIndex = '5';
     front.style.opacity = '1'; back.style.opacity = '1';
@@ -176,6 +177,10 @@ function showSlideImage(url, dir, t) {
   back.style.zIndex = '6'; front.style.zIndex = '5';
   front.style.opacity = '1'; back.style.opacity = '0';
   back.onload = run;
+  back.onerror = () => {
+    document.querySelector('.placeholder').textContent = 'Unable to load this slide.';
+    document.querySelector('.placeholder').style.zIndex = '7';
+  };
   back.src = url;
   $('blur-img').src = url;
   $('blur-img').classList.remove('hide');
