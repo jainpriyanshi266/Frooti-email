@@ -1,0 +1,304 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SHOCKING REALITY OF FROOTI!!</title>
+<meta name="description" content="You have to see this.">
+<meta property="og:title" content="SHOCKING REALITY OF FROOTI!!">
+<meta property="og:description" content="You have to see this.">
+<meta property="og:image" content="assets/1.png">
+<style>
+* { box-sizing:border-box; }
+html, body { margin:0; height:100%; background:#141414; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; overscroll-behavior:none; }
+#app { position:relative; width:100%; height:100vh; height:100dvh; overflow:hidden; user-select:none; }
+#stage { position:absolute; inset:0 0 34px 0; }
+.slide-layer { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; z-index:5;
+  opacity:0; pointer-events:none; will-change:opacity,transform,clip-path; }
+#blur-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  filter:blur(26px) brightness(.5); transform:scale(1.1); }
+#blur-img.hide { display:none; }
+.placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  color:rgba(255,255,255,.6); background:linear-gradient(135deg,#4a3b2a,#241c12); font-size:15px; }
+/* clickable button hotspots, positioned over the fitted image */
+#hotspots { position:absolute; z-index:20; display:none; }
+.hotspot { position:absolute; display:block; cursor:pointer; }
+#kbd-hint { position:absolute; z-index:22; right:5%; bottom:16%; display:none;
+  flex-direction:column; align-items:flex-end; gap:12px; }
+#kbd-hint.show { display:flex; }
+@media (hover:none) { #kbd-hint.show { display:none; } }
+.keys { display:grid; grid-template-columns:repeat(3,44px); grid-template-rows:44px 44px; gap:6px;
+  background:rgba(0,0,0,.25); padding:10px; border-radius:10px; font-family:-apple-system,sans-serif; }
+.key { border-radius:8px; background:#f2f2f2; color:#333; display:flex; align-items:center;
+  justify-content:center; font-size:17px; font-weight:700; box-shadow:0 3px 0 #bbb; }
+.key.up { grid-column:2; grid-row:1; } .key.left { grid-column:1; grid-row:2; }
+.key.down { grid-column:2; grid-row:2; }
+.key.right { grid-column:3; grid-row:2; background:#7ee08a; box-shadow:0 3px 0 #4aa856; animation:kp 1.6s ease-in-out infinite; }
+@keyframes kp { 0%,100%{transform:translateY(0);} 50%{transform:translateY(3px);} }
+.hint-label { background:#fdf6c9; border:2px solid #2b2b2b; border-radius:6px;
+  box-shadow:4px 4px 0 rgba(0,0,0,.35); padding:10px 16px; font-size:16px; color:#1d1d1d; }
+#tap-hint { position:absolute; z-index:22; bottom:14%; left:50%; transform:translateX(-50%);
+  display:none; background:#fdf6c9; border:2px solid #2b2b2b; border-radius:6px;
+  box-shadow:4px 4px 0 rgba(0,0,0,.35); padding:9px 15px; font-size:14px; color:#1d1d1d; white-space:nowrap; }
+@media (hover:none) { #tap-hint.show { display:block; } }
+.chev { position:absolute; z-index:35; top:50%; transform:translateY(-50%); width:48px; height:48px;
+  border-radius:50%; border:none; background:rgba(0,0,0,.38); color:#fff; font-size:30px;
+  line-height:1; cursor:pointer; transition:background .2s, opacity .2s; }
+.chev:hover { background:rgba(0,0,0,.65); }
+#prev { left:14px; } #next { right:14px; }
+.chev[disabled] { opacity:.22; cursor:default; }
+@media (max-width:640px){ .chev{ width:38px; height:38px; font-size:24px; } }
+.tapzone { position:absolute; top:0; bottom:40px; z-index:15; background:transparent; border:none; padding:0; }
+#tap-l { left:0; width:30%; } #tap-r { right:0; width:70%; }
+#progress { position:absolute; z-index:40; left:0; right:0; bottom:0; height:34px;
+  background:rgba(255,255,255,.14); backdrop-filter:blur(4px); }
+#track { position:absolute; inset:0; }
+#fill { position:absolute; left:0; top:0; bottom:0; width:0%;
+  background:linear-gradient(90deg,#3d8bfd,#7ee08a); transition:width .35s ease; }
+.dot { position:absolute; top:50%; transform:translate(-50%,-50%); width:8px; height:8px;
+  border-radius:50%; background:#fff; opacity:.85; z-index:2; transition:transform .25s, background .25s;
+  box-shadow:0 1px 3px rgba(0,0,0,.4); cursor:pointer; border:none; padding:0; }
+.dot.done { background:#7ee08a; }
+.dot.now { transform:translate(-50%,-50%) scale(1.7); background:#fff; }
+/* persistent share widget (all slides) */
+#share-widget { position:absolute; z-index:45; right:16px; bottom:50px; display:flex;
+  flex-direction:column; align-items:center; gap:10px; }
+/* absolutely positioned so the closed widget's box is just the button — no overlap with the next arrow */
+#share-options { position:absolute; right:0; bottom:56px; display:flex; flex-direction:column; gap:10px;
+  opacity:0; transform:translateY(10px); pointer-events:none; transition:opacity .2s ease, transform .2s ease; }
+#share-widget.open #share-options { opacity:1; transform:none; pointer-events:auto; }
+#share-widget button { width:40px; height:40px; border-radius:50%; border:none; cursor:pointer;
+  background:rgba(38,38,38,.9); color:#fff; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 3px 10px rgba(0,0,0,.45); transition:transform .15s ease, background .15s ease; padding:0; }
+#share-widget button:hover { transform:scale(1.12); background:#000; }
+#share-widget button svg { width:19px; height:19px; fill:currentColor; display:block; }
+#share-toggle { background:#dfaa4e; color:#2b2408; width:46px; height:46px; }
+#share-toggle:hover { background:#c8942f; }
+#share-copied { position:absolute; right:56px; bottom:2px; background:#222; color:#fff; font-size:12px;
+  padding:7px 11px; border-radius:7px; white-space:nowrap; opacity:0; transition:opacity .2s ease; pointer-events:none; }
+#share-copied.show { opacity:1; }
+@media (max-width:640px){ #share-widget { right:12px; bottom:46px; } #share-widget button { width:38px; height:38px; } #share-toggle { width:44px; height:44px; } }
+</style>
+</head>
+<body>
+<div id="app" data-transition="fade">
+  <div id="stage">
+    <div class="placeholder">loading…</div>
+    <img id="blur-img" class="hide" alt="" aria-hidden="true" draggable="false">
+    <img id="slide-img-a" class="slide-layer" alt="" draggable="false">
+    <img id="slide-img-b" class="slide-layer" alt="" draggable="false">
+    <div id="hotspots"></div>
+    <div id="kbd-hint">
+      <div class="keys"><div class="key up">▲</div><div class="key left">◀</div><div class="key down">▼</div><div class="key right">▶</div></div>
+      <div class="hint-label">Use your <b>keyboard arrows</b> to watch the story!</div>
+    </div>
+    <div id="tap-hint">Tap the <b>right side</b> to continue →</div>
+    <button class="tapzone" id="tap-l" aria-label="Previous"></button>
+    <button class="tapzone" id="tap-r" aria-label="Next"></button>
+    <button class="chev" id="prev" aria-label="Previous">&#8249;</button>
+    <button class="chev" id="next" aria-label="Next">&#8250;</button>
+  </div>
+  <div id="progress"><div id="track"><div id="fill"></div></div></div>
+  <div id="share-widget">
+    <div id="share-copied">Link copied</div>
+    <div id="share-options">
+      <button data-share="copy" title="Copy link" aria-label="Copy link"><svg viewBox="0 0 24 24"><path d="M3.9 12a3.1 3.1 0 013.1-3.1h4V7H7a5 5 0 100 10h4v-1.9H7A3.1 3.1 0 013.9 12zM8 13h8v-2H8v2zm9-6h-4v1.9h4a3.1 3.1 0 110 6.2h-4V17h4a5 5 0 100-10z"/></svg></button>
+      <button data-share="linkedin" title="Share on LinkedIn" aria-label="Share on LinkedIn"><svg viewBox="0 0 24 24"><path d="M4.98 3.5a2.5 2.5 0 11-.02 5 2.5 2.5 0 01.02-5zM3 8.98h4v12H3zM10 8.98h3.8v1.64h.05c.53-1 1.83-2.05 3.76-2.05 4.02 0 4.76 2.65 4.76 6.1v6.31h-4v-5.6c0-1.34-.02-3.06-1.87-3.06s-2.15 1.46-2.15 2.97v5.69H10z"/></svg></button>
+      <button data-share="x" title="Share on X" aria-label="Share on X"><svg viewBox="0 0 24 24"><path d="M18.9 1.5h3.7l-8 9.1 9.4 12.4h-7.4l-5.8-7.6-6.6 7.6H.5l8.5-9.7L0 1.5h7.6l5.2 6.9zM17.6 21.3h2L6.5 3.6H4.3z"/></svg></button>
+      <button data-share="whatsapp" title="Share on WhatsApp" aria-label="Share on WhatsApp"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 00-8.6 15L2 22l5.1-1.3A10 10 0 1012 2zm0 1.9a8.1 8.1 0 016.9 12.3l-.4.6.7 2.5-2.6-.7-.5.3A8.1 8.1 0 1112 3.9zm-3 3c-.3 0-.7.1-1 .5-.4.4-1 1-1 2.4s1 2.9 1.2 3.1c.2.2 2 3.2 5 4.4 2.4 1 2.9.8 3.4.7.5 0 1.7-.7 1.9-1.3.2-.6.2-1.2.1-1.3-.1-.1-.3-.2-.6-.4-.3-.2-1.7-.9-2-1-.3-.1-.5-.1-.6.1l-.9 1c-.1.2-.3.2-.6.1-.3-.1-1.2-.5-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6l.4-.5.3-.5c.1-.2 0-.4 0-.5 0-.1-.6-1.5-.8-2C9.7 7 9.4 7 9.2 7z"/></svg></button>
+      <button data-share="facebook" title="Share on Facebook" aria-label="Share on Facebook"><svg viewBox="0 0 24 24"><path d="M22 12a10 10 0 10-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.3v7A10 10 0 0022 12z"/></svg></button>
+      <button data-share="instagram" title="Copy link + open Instagram" aria-label="Share on Instagram"><svg viewBox="0 0 24 24"><path d="M12 7.4a4.6 4.6 0 100 9.2 4.6 4.6 0 000-9.2zm0 7.6a3 3 0 110-6 3 3 0 010 6zm4.8-7.8a1.1 1.1 0 11-2.2 0 1.1 1.1 0 012.2 0zM20 7.3c-.1-1.4-.4-2.6-1.4-3.6S16.4 2.4 15 2.3c-1.4-.1-5.6-.1-7 0-1.4.1-2.6.4-3.6 1.4S3 5.9 2.9 7.3c-.1 1.4-.1 5.6 0 7 .1 1.4.4 2.6 1.4 3.6s2.2 1.3 3.6 1.4c1.4.1 5.6.1 7 0 1.4-.1 2.6-.4 3.6-1.4s1.3-2.2 1.4-3.6c.1-1.4.1-5.6 0-7zm-1.9 8.5c-.3.7-.9 1.3-1.6 1.6-1.1.4-3.8.3-5 .3s-3.9.1-5-.3c-.7-.3-1.3-.9-1.6-1.6-.4-1.1-.3-3.8-.3-5s-.1-3.9.3-5c.3-.7.9-1.3 1.6-1.6 1.1-.4 3.8-.3 5-.3s3.9-.1 5 .3c.7.3 1.3.9 1.6 1.6.4 1.1.3 3.8.3 5s.1 3.9-.3 5z"/></svg></button>
+    </div>
+    <button id="share-toggle" title="Share" aria-label="Share this story"><svg viewBox="0 0 24 24"><path d="M18 16.1c-.8 0-1.5.3-2 .8l-7-4.1c.1-.2.1-.5.1-.8s0-.6-.1-.8l7-4.1c.5.5 1.2.8 2 .8a3 3 0 100-6 3 3 0 00-3 3c0 .3 0 .6.1.8l-7 4.1a3 3 0 100 4l7.1 4.1c-.1.2-.1.5-.1.7a2.9 2.9 0 102.9-2.9z"/></svg></button>
+  </div>
+</div>
+<script>
+const FILES = ["1.png","2.png","3.png","4.png","5.png","6.png","7.png","8.png","9.png","10.png","11.png","12.png","13.png","14.png","15.png","16.png","17.png","18.png","19.png","20.png","21.png","22.png","23.png","24.png","25.png","26.png","27.png","28.png","29.png","30.png","31.png","32.png","33.png","34.png","35.png","36.png","37.png","38.png","39.png","40.png","41.png","42.png","43.png","44.png","45.png","46.png","47.png","48.png","49.png","50.png","51.png","52.png"];            // ordered slide filenames
+const DOT_AT = [0,5,13,20,33,39,44,50,51];            // slide indexes that get a chapter dot
+const ASSET_OVERRIDE = {};  // preview: blob URLs; published: {}
+const TRANSITIONS = ["fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade","fade"]; // per-slide transition
+const HOTSPOTS = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[{"x":49.3017,"y":66.2279,"w":37.7095,"h":18.3338,"url":"https://www.satviclife.org/"}],[{"x":34.2179,"y":53.5924,"w":46.0894,"h":22.2979,"url":"","share":true}]];      // per-slide array of {x,y,w,h,url} in %
+const SHARE = { title: "SHOCKING REALITY OF FROOTI!!" };
+const src = f => ASSET_OVERRIDE[f] || ('assets/' + f);
+
+const SLIDES = FILES.map((f, i) => ({ img: f, t: TRANSITIONS[i] || 'fade', hotspots: HOTSPOTS[i] || [] }));
+
+const $ = id => document.getElementById(id);
+let s = 0;
+const N = SLIDES.length;
+const track = $('track');
+DOT_AT.forEach(i => {
+  if (i < 0 || i >= N) return;
+  const d = document.createElement('button');
+  d.className = 'dot';
+  d.dataset.idx = i;
+  d.style.left = ((i + 0.5) / N * 100) + '%';
+  d.onclick = e => { e.stopPropagation(); const dir = i > s ? 1 : -1; s = i; render(dir); };
+  track.appendChild(d);
+});
+
+// ---- transition engine (Web Animations API) ----
+let activeLayer = 'b';
+function resetLayer(el) {
+  el.getAnimations().forEach(a => a.cancel());
+  el.style.transition = 'none'; el.style.transform = 'none'; el.style.clipPath = 'none';
+}
+function showSlideImage(url, dir, t) {
+  $('hotspots').style.display = 'none';
+  const backKey = activeLayer === 'a' ? 'b' : 'a';
+  const front = $('slide-img-' + activeLayer);
+  const back = $('slide-img-' + backKey);
+  const run = () => {
+    resetLayer(back);
+    back.style.zIndex = '6'; front.style.zIndex = '5';
+    front.style.opacity = '1'; back.style.opacity = '1';
+    const ease = 'cubic-bezier(.4,0,.2,1)';
+    const opt = d => ({ duration: d, easing: ease, fill: 'both' });
+    if (t === 'none') { /* instant */ }
+    else if (t === 'slide') {
+      back.animate([{ transform: 'translateX(' + (dir < 0 ? '-100%' : '100%') + ')' }, { transform: 'translateX(0)' }], opt(500));
+      front.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(' + (dir < 0 ? '100%' : '-100%') + ')' }], opt(500));
+    } else if (t === 'matchmove') {
+      back.animate([{ opacity: 0, transform: 'scale(1.12)' }, { opacity: 1, transform: 'scale(1)' }], opt(650));
+      front.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(0.92)' }], opt(650));
+    } else if (t === 'linewipe') {
+      back.animate([{ clipPath: dir < 0 ? 'inset(0 0 0 100%)' : 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], opt(500));
+    } else if (t === 'circlewipe') {
+      back.animate([{ clipPath: 'circle(0% at 50% 50%)' }, { clipPath: 'circle(150% at 50% 50%)' }], opt(550));
+    } else {
+      back.animate([{ opacity: 0 }, { opacity: 1 }], opt(500));
+    }
+    activeLayer = backKey;
+    positionHotspots();
+  };
+  resetLayer(back);
+  back.style.zIndex = '6'; front.style.zIndex = '5';
+  front.style.opacity = '1'; back.style.opacity = '0';
+  back.onload = run;
+  back.src = url;
+  $('blur-img').src = url;
+  $('blur-img').classList.remove('hide');
+}
+
+// ---- clickable hotspots over the contain-fitted image ----
+function containRect(nw, nh, bw, bh) {
+  const ar = nw / nh, bar = bw / bh;
+  let w, h;
+  if (ar > bar) { w = bw; h = bw / ar; } else { h = bh; w = bh * ar; }
+  return { x: (bw - w) / 2, y: (bh - h) / 2, w: w, h: h };
+}
+function positionHotspots() {
+  const layer = $('hotspots');
+  const sl = SLIDES[s];
+  const hs = (sl && sl.hotspots) || [];
+  const img = $('slide-img-' + activeLayer);
+  if (!hs.length || !img.naturalWidth) { layer.style.display = 'none'; return; }
+  const stage = $('stage');
+  const r = containRect(img.naturalWidth, img.naturalHeight, stage.clientWidth, stage.clientHeight);
+  layer.style.display = 'block';
+  layer.style.left = r.x + 'px'; layer.style.top = r.y + 'px';
+  layer.style.width = r.w + 'px'; layer.style.height = r.h + 'px';
+  layer.innerHTML = '';
+  hs.forEach(h => {
+    const a = document.createElement('a');
+    a.className = 'hotspot';
+    a.style.left = h.x + '%'; a.style.top = h.y + '%';
+    a.style.width = h.w + '%'; a.style.height = h.h + '%';
+    if (h.share) {
+      a.href = '#';
+      a.onclick = e => { e.preventDefault(); e.stopPropagation(); triggerShare(); };
+    } else {
+      a.href = h.url || '#'; a.target = '_blank'; a.rel = 'noopener';
+      a.onclick = e => e.stopPropagation();
+    }
+    layer.appendChild(a);
+  });
+}
+window.addEventListener('resize', positionHotspots);
+
+function render(dir) {
+  const sl = SLIDES[s];
+  showSlideImage(src(sl.img), dir || 0, sl.t || 'fade');
+  const nxt = SLIDES[s + 1];
+  if (nxt && nxt.img) { const p = new Image(); p.src = src(nxt.img); }
+  $('kbd-hint').classList.toggle('show', s === 0);
+  $('tap-hint').classList.toggle('show', s === 0);
+  $('prev').disabled = s === 0;
+  $('next').disabled = s === N - 1;
+  $('fill').style.width = ((s + 1) / N * 100) + '%';
+  [...track.querySelectorAll('.dot')].forEach(d => {
+    const i = +d.dataset.idx;
+    d.classList.toggle('done', i < s);
+    d.classList.toggle('now', i === s);
+  });
+}
+function go(dir) { const n = s + dir; if (n >= 0 && n < N) { s = n; render(dir); } }
+$('prev').onclick = e => { e.stopPropagation(); go(-1); };
+$('next').onclick = e => { e.stopPropagation(); go(1); };
+$('tap-l').onclick = () => go(-1);
+$('tap-r').onclick = () => go(1);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') go(1);
+  if (e.key === 'ArrowLeft') go(-1);
+});
+let tx = null, ty = null;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
+document.addEventListener('touchend', e => {
+  if (tx === null) return;
+  const dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1);
+  tx = null;
+}, { passive: true });
+
+// ---- share widget ----
+const shareWidget = $('share-widget');
+let copiedTimer = null;
+function showCopied(msg) {
+  const el = $('share-copied');
+  el.textContent = msg || 'Link copied';
+  el.classList.add('show');
+  clearTimeout(copiedTimer);
+  copiedTimer = setTimeout(() => el.classList.remove('show'), 1800);
+}
+function doShare(k) {
+  const u = location.href, eu = encodeURIComponent(u), et = encodeURIComponent(SHARE.title || document.title);
+  if (k === 'copy') { if (navigator.clipboard) navigator.clipboard.writeText(u); showCopied(); return; }
+  if (k === 'instagram') {
+    if (navigator.clipboard) navigator.clipboard.writeText(u);
+    showCopied('Link copied — paste into Instagram');
+    window.open('https://www.instagram.com/', '_blank', 'noopener');
+    return;
+  }
+  let url = '';
+  if (k === 'linkedin') url = 'https://www.linkedin.com/sharing/share-offsite/?url=' + eu;
+  else if (k === 'x') url = 'https://twitter.com/intent/tweet?url=' + eu + '&text=' + et;
+  else if (k === 'whatsapp') url = 'https://wa.me/?text=' + et + '%20' + eu;
+  else if (k === 'facebook') url = 'https://www.facebook.com/sharer/sharer.php?u=' + eu;
+  if (url) window.open(url, '_blank', 'noopener');
+}
+[...shareWidget.querySelectorAll('#share-options button')].forEach(b => {
+  b.onclick = e => { e.stopPropagation(); doShare(b.dataset.share); };
+});
+$('share-toggle').onclick = e => { e.stopPropagation(); shareWidget.classList.toggle('open'); };
+// open ONLY when the yellow button itself is hovered; stay open while cursor is on the widget
+$('share-toggle').addEventListener('mouseenter', () => shareWidget.classList.add('open'));
+shareWidget.addEventListener('mouseleave', () => shareWidget.classList.remove('open'));
+// a "Share button" hotspot (e.g. FORWARD THIS): try the native share sheet; if it's unavailable
+// or blocked (desktop, or inside the builder preview iframe), fall back to the corner share menu
+function triggerShare() {
+  const openMenu = () => shareWidget.classList.add('open');
+  if (navigator.share) {
+    try {
+      const p = navigator.share({ title: SHARE.title || document.title, url: location.href });
+      if (p && p.catch) p.catch(openMenu);
+    } catch (e) { openMenu(); }
+  } else {
+    openMenu();
+  }
+}
+
+render(0);
+</script>
+</body>
+</html>
