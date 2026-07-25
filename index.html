@@ -9,6 +9,7 @@
 <meta property="og:title" content="SHOCKING REALITY OF FROOTI !!">
 <meta property="og:description" content="You have to see this.">
 <meta property="og:image" content="/1.jpg">
+<link rel="preload" as="image" href="/1.jpg" fetchpriority="high">
 <style>
 * { box-sizing:border-box; }
 html, body { margin:0; height:100%; background:#141414; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; overscroll-behavior:none; }
@@ -21,8 +22,6 @@ html, body { margin:0; height:100%; background:#141414; font-family:-apple-syste
 #blur-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
   filter:blur(26px) brightness(.5); transform:scale(1.1); }
 #blur-img.hide { display:none; }
-.placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  color:rgba(255,255,255,.6); background:linear-gradient(135deg,#4a3b2a,#241c12); font-size:15px; }
 /* clickable button hotspots, positioned over the fitted image */
 #hotspots { position:absolute; z-index:20; display:none; }
 .hotspot { position:absolute; display:block; cursor:pointer; }
@@ -86,10 +85,9 @@ html, body { margin:0; height:100%; background:#141414; font-family:-apple-syste
 <body>
 <div id="app" data-transition="fade" data-fit="auto">
   <div id="stage">
-    <div class="placeholder">loading…</div>
     <img id="blur-img" class="hide" alt="" aria-hidden="true" draggable="false">
     <img id="slide-img-a" class="slide-layer" alt="" draggable="false">
-    <img id="slide-img-b" class="slide-layer" alt="" draggable="false">
+    <img id="slide-img-b" class="slide-layer" src="/1.jpg" fetchpriority="high" style="opacity:1" alt="" draggable="false">
     <div id="hotspots"></div>
     <div id="kbd-hint">
       <div class="keys"><div class="key up">▲</div><div class="key left">◀</div><div class="key down">▼</div><div class="key right">▶</div></div>
