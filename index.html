@@ -9,7 +9,12 @@
 <meta property="og:title" content="SHOCKING REALITY OF FROOTI !!">
 <meta property="og:description" content="You have to see this.">
 <meta property="og:image" content="/1.jpg">
-<link rel="preload" as="image" href="/1.jpg" fetchpriority="high">
+<link rel="preconnect" href="https://www.googletagmanager.com">
+<link rel="dns-prefetch" href="//www.googletagmanager.com">
+<link rel="preload" as="image"
+  href="/.netlify/images?url=/1.jpg&amp;w=1280&amp;q=72"
+  imagesrcset="/.netlify/images?url=/1.jpg&amp;w=640&amp;q=72 640w, /.netlify/images?url=/1.jpg&amp;w=960&amp;q=72 960w, /.netlify/images?url=/1.jpg&amp;w=1280&amp;q=72 1280w, /.netlify/images?url=/1.jpg&amp;w=1600&amp;q=72 1600w, /.netlify/images?url=/1.jpg&amp;w=1920&amp;q=72 1920w"
+  imagesizes="100vw" fetchpriority="high">
 <script>
   var GA_MEASUREMENT_ID = 'G-C6QX0Q3ZX5';
 
@@ -18,6 +23,7 @@
 
   var gaScript = document.createElement('script');
   gaScript.async = true;
+  gaScript.fetchPriority = 'low';
   gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_MEASUREMENT_ID;
   document.head.appendChild(gaScript);
   gtag('js', new Date());
@@ -101,8 +107,11 @@ html, body { margin:0; height:100%; background:#141414; font-family:-apple-syste
 <div id="app" data-transition="fade" data-fit="auto">
   <div id="stage">
     <img id="blur-img" class="hide" alt="" aria-hidden="true" draggable="false">
-    <img id="slide-img-a" class="slide-layer" alt="" draggable="false">
-    <img id="slide-img-b" class="slide-layer" src="/1.jpg" fetchpriority="high" style="opacity:1" alt="" draggable="false">
+    <img id="slide-img-a" class="slide-layer" width="1920" height="1080" decoding="async" alt="" draggable="false">
+    <img id="slide-img-b" class="slide-layer"
+      src="/.netlify/images?url=/1.jpg&amp;w=1280&amp;q=72"
+      srcset="/.netlify/images?url=/1.jpg&amp;w=640&amp;q=72 640w, /.netlify/images?url=/1.jpg&amp;w=960&amp;q=72 960w, /.netlify/images?url=/1.jpg&amp;w=1280&amp;q=72 1280w, /.netlify/images?url=/1.jpg&amp;w=1600&amp;q=72 1600w, /.netlify/images?url=/1.jpg&amp;w=1920&amp;q=72 1920w"
+      sizes="100vw" width="1920" height="1080" decoding="async" fetchpriority="high" style="opacity:1" alt="" draggable="false">
     <div id="hotspots"></div>
     <div id="kbd-hint">
       <div class="keys"><div class="key up">▲</div><div class="key left">◀</div><div class="key down">▼</div><div class="key right">▶</div></div>
@@ -136,15 +145,29 @@ const TRANSITIONS = ["fade","fade","fade","fade","fade","fade","fade","fade","fa
 const HOTSPOTS = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[{"x":49.581,"y":66.6068,"w":37.2905,"h":17.5982,"url":"https://wa.me/917499014868?text=I%20want%20Satvic%20Approved%20Clean%20Brands%20List."}],[{"x":35.0559,"y":53.4701,"w":45.5307,"h":21.8119,"url":"","share":true}]];      // per-slide array of {x,y,w,h,url} in %
 const FIT = "auto";           // 'cover' | 'contain'
 const SHARE = { title: "SHOCKING REALITY OF FROOTI !!" };
-const src = f => ASSET_OVERRIDE[f] || ('/' + f);
+const IMAGE_WIDTHS = [640, 960, 1280, 1600, 1920];
+function imageWidth() {
+  const needed = Math.ceil(window.innerWidth * Math.min(window.devicePixelRatio || 1, 2));
+  return IMAGE_WIDTHS.find(width => width >= needed) || IMAGE_WIDTHS[IMAGE_WIDTHS.length - 1];
+}
+const src = f => ASSET_OVERRIDE[f] || ('/.netlify/images?url=/' + f + '&w=' + imageWidth() + '&q=72');
 
 const SLIDES = FILES.map((f, i) => ({ img: f, t: TRANSITIONS[i] || 'fade', hotspots: HOTSPOTS[i] || [] }));
 
 const $ = id => document.getElementById(id);
-// preload + decode every slide up front so transitions are instant and never hitch mid-animation
-FILES.forEach(f => { const im = new Image(); im.decoding = 'async'; im.src = src(f); });
 let s = 0;
 const N = SLIDES.length;
+const preloadedSlides = new Set();
+function preloadSlide(index) {
+  if (index < 0 || index >= N) return;
+  const url = src(SLIDES[index].img);
+  if (preloadedSlides.has(url)) return;
+  preloadedSlides.add(url);
+  const image = new Image();
+  image.decoding = 'async';
+  image.fetchPriority = 'low';
+  image.src = url;
+}
 
 let lastTrackedSlide = -1;
 function trackSlideView() {
@@ -274,8 +297,7 @@ window.addEventListener('resize', positionHotspots);
 function render(dir) {
   const sl = SLIDES[s];
   showSlideImage(src(sl.img), dir || 0, sl.t || 'fade');
-  const nxt = SLIDES[s + 1];
-  if (nxt && nxt.img) { const p = new Image(); p.src = src(nxt.img); }
+  preloadSlide(s + 1);
   $('kbd-hint').classList.toggle('show', s === 0);
   $('tap-hint').classList.toggle('show', s === 0);
   $('prev').disabled = s === 0;
