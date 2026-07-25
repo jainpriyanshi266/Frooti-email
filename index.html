@@ -157,16 +157,35 @@ const SLIDES = FILES.map((f, i) => ({ img: f, t: TRANSITIONS[i] || 'fade', hotsp
 const $ = id => document.getElementById(id);
 let s = 0;
 const N = SLIDES.length;
+const PRELOAD_BATCH_SIZE = 4;
 const preloadedSlides = new Set();
-function preloadSlide(index) {
-  if (index < 0 || index >= N) return;
+function preloadSlide(index, priority) {
+  if (index < 0 || index >= N) return Promise.resolve();
   const url = src(SLIDES[index].img);
-  if (preloadedSlides.has(url)) return;
+  if (preloadedSlides.has(url)) return Promise.resolve();
   preloadedSlides.add(url);
-  const image = new Image();
-  image.decoding = 'async';
-  image.fetchPriority = 'low';
-  image.src = url;
+  return new Promise(resolve => {
+    const image = new Image();
+    image.decoding = 'async';
+    image.fetchPriority = priority || 'low';
+    image.onload = resolve;
+    image.onerror = resolve;
+    image.src = url;
+  });
+}
+function preloadBatch(startIndex) {
+  if (startIndex >= N) return;
+  const requests = [];
+  for (let offset = 0; offset < PRELOAD_BATCH_SIZE && startIndex + offset < N; offset++) {
+    requests.push(preloadSlide(startIndex + offset, offset === 0 ? 'high' : 'low'));
+  }
+  Promise.all(requests).then(() => {
+    const nextStart = startIndex + PRELOAD_BATCH_SIZE;
+    if (nextStart >= N) return;
+    const loadNextBatch = () => preloadBatch(nextStart);
+    if ('requestIdleCallback' in window) requestIdleCallback(loadNextBatch, { timeout: 1500 });
+    else setTimeout(loadNextBatch, 250);
+  });
 }
 
 let lastTrackedSlide = -1;
@@ -294,10 +313,15 @@ function positionHotspots() {
 }
 window.addEventListener('resize', positionHotspots);
 
-function render(dir) {
+function render(dir, initial) {
   const sl = SLIDES[s];
-  showSlideImage(src(sl.img), dir || 0, sl.t || 'fade');
-  preloadSlide(s + 1);
+  if (initial) {
+    activeLayer = 'b';
+    positionHotspots();
+    trackSlideView();
+  } else {
+    showSlideImage(src(sl.img), dir || 0, sl.t || 'fade');
+  }
   $('kbd-hint').classList.toggle('show', s === 0);
   $('tap-hint').classList.toggle('show', s === 0);
   $('prev').disabled = s === 0;
@@ -376,7 +400,19 @@ function triggerShare() {
   }
 }
 
-render(0);
+render(0, true);
+const firstSlideImage = $('slide-img-b');
+let batchLoadingStarted = false;
+function startBatchLoading() {
+  if (batchLoadingStarted) return;
+  batchLoadingStarted = true;
+  preloadBatch(1);
+}
+if (firstSlideImage.complete && firstSlideImage.naturalWidth) startBatchLoading();
+else {
+  firstSlideImage.addEventListener('load', startBatchLoading, { once: true });
+  firstSlideImage.addEventListener('error', startBatchLoading, { once: true });
+}
 </script>
 </body>
 </html>
