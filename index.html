@@ -167,9 +167,9 @@ const src = f => ASSET_OVERRIDE[f] || ('/.netlify/images?url=/' + f + '&w=' + im
 const SLIDES = FILES.map((f, i) => ({ img: f, t: TRANSITIONS[i] || 'fade', hotspots: HOTSPOTS[i] || [] }));
 
 const $ = id => document.getElementById(id);
-function setLoading(loading, slideNumber) {
+function setLoading(loading) {
   const indicator = $('slide-loading');
-  $('loading-label').textContent = slideNumber ? 'Loading slide ' + slideNumber : 'Loading';
+  $('loading-label').textContent = 'Loading';
   indicator.classList.toggle('show', loading);
   indicator.setAttribute('aria-hidden', String(!loading));
 }
@@ -238,7 +238,7 @@ function resetLayer(el) {
 }
 function showSlideImage(url, dir, t) {
   const requestId = ++slideRequestId;
-  setLoading(true, s + 1);
+  setLoading(true);
   $('hotspots').style.display = 'none';
   const backKey = activeLayer === 'a' ? 'b' : 'a';
   const front = $('slide-img-' + activeLayer);
