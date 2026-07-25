@@ -175,7 +175,6 @@ function setLoading(loading) {
 }
 let s = 0;
 const N = SLIDES.length;
-const PRELOAD_BATCH_SIZE = 4;
 const preloadedSlides = new Set();
 function preloadSlide(index, priority) {
   if (index < 0 || index >= N) return Promise.resolve();
@@ -187,23 +186,13 @@ function preloadSlide(index, priority) {
     image.decoding = 'async';
     image.fetchPriority = priority || 'low';
     image.onload = resolve;
-    image.onerror = resolve;
+    image.onerror = () => { preloadedSlides.delete(url); resolve(); };
     image.src = url;
   });
 }
-function preloadBatch(startIndex) {
-  if (startIndex >= N) return;
-  const requests = [];
-  for (let offset = 0; offset < PRELOAD_BATCH_SIZE && startIndex + offset < N; offset++) {
-    requests.push(preloadSlide(startIndex + offset, offset === 0 ? 'high' : 'low'));
-  }
-  Promise.all(requests).then(() => {
-    const nextStart = startIndex + PRELOAD_BATCH_SIZE;
-    if (nextStart >= N) return;
-    const loadNextBatch = () => preloadBatch(nextStart);
-    if ('requestIdleCallback' in window) requestIdleCallback(loadNextBatch, { timeout: 1500 });
-    else setTimeout(loadNextBatch, 250);
-  });
+function preloadAround(index) {
+  preloadSlide(index + 1, 'low');
+  preloadSlide(index - 1, 'low');
 }
 
 let lastTrackedSlide = -1;
@@ -225,19 +214,27 @@ DOT_AT.forEach(i => {
   d.className = 'dot';
   d.dataset.idx = i;
   d.style.left = ((i + 0.5) / N * 100) + '%';
-  d.onclick = e => { e.stopPropagation(); const dir = i > s ? 1 : -1; s = i; render(dir); };
+  d.onclick = e => {
+    e.stopPropagation();
+    if (slideLoading || i === s) return;
+    const dir = i > s ? 1 : -1;
+    s = i;
+    render(dir);
+  };
   track.appendChild(d);
 });
 
 // ---- transition engine (Web Animations API) ----
 let activeLayer = 'b';
 let slideRequestId = 0;
+let slideLoading = false;
 function resetLayer(el) {
   el.getAnimations().forEach(a => a.cancel());
   el.style.transition = 'none'; el.style.transform = 'none'; el.style.clipPath = 'none';
 }
-function showSlideImage(url, dir, t) {
+function showSlideImage(url, fallbackUrl, dir, t, slideIndex) {
   const requestId = ++slideRequestId;
+  slideLoading = true;
   setLoading(true);
   $('hotspots').style.display = 'none';
   const backKey = activeLayer === 'a' ? 'b' : 'a';
@@ -245,6 +242,7 @@ function showSlideImage(url, dir, t) {
   const back = $('slide-img-' + backKey);
   const run = () => {
     if (requestId !== slideRequestId) return;
+    slideLoading = false;
     setLoading(false);
     resetLayer(back);
     back.style.zIndex = '6'; front.style.zIndex = '5';
@@ -266,19 +264,37 @@ function showSlideImage(url, dir, t) {
       back.animate([{ opacity: 0 }, { opacity: 1 }], opt(500));
     }
     activeLayer = backKey;
+    updateProgress(slideIndex);
     positionHotspots();
     trackSlideView();
+    preloadAround(slideIndex);
   };
   resetLayer(back);
   back.style.zIndex = '6'; front.style.zIndex = '5';
   front.style.opacity = '1'; back.style.opacity = '0';
+  back.removeAttribute('srcset');
+  back.removeAttribute('sizes');
+  let triedFallback = false;
+  const useFallback = () => {
+    if (triedFallback || fallbackUrl === url || requestId !== slideRequestId) return false;
+    triedFallback = true;
+    back.src = fallbackUrl;
+    $('blur-img').src = fallbackUrl;
+    return true;
+  };
+  const fallbackTimer = setTimeout(useFallback, 10000);
   back.onload = () => {
     if (requestId !== slideRequestId) return;
+    clearTimeout(fallbackTimer);
     if (back.decode) back.decode().then(run).catch(run);
     else run();
   };
   back.onerror = () => {
-    if (requestId === slideRequestId) setLoading(false);
+    if (requestId !== slideRequestId) return;
+    clearTimeout(fallbackTimer);
+    if (useFallback()) return;
+    slideLoading = false;
+    setLoading(false);
   };
   back.src = url;
   $('blur-img').src = url;
@@ -341,27 +357,31 @@ function positionHotspots() {
 }
 window.addEventListener('resize', positionHotspots);
 
+function updateProgress(index) {
+  $('fill').style.width = ((index + 1) / N * 100) + '%';
+  [...track.querySelectorAll('.dot')].forEach(d => {
+    const i = +d.dataset.idx;
+    d.classList.toggle('done', i < index);
+    d.classList.toggle('now', i === index);
+  });
+}
+
 function render(dir, initial) {
   const sl = SLIDES[s];
   if (initial) {
     activeLayer = 'b';
+    updateProgress(s);
     positionHotspots();
     trackSlideView();
   } else {
-    showSlideImage(src(sl.img), dir || 0, sl.t || 'fade');
+    showSlideImage(src(sl.img), ASSET_OVERRIDE[sl.img] || ('/' + sl.img), dir || 0, sl.t || 'fade', s);
   }
   $('kbd-hint').classList.toggle('show', s === 0);
   $('tap-hint').classList.toggle('show', s === 0);
   $('prev').disabled = s === 0;
   $('next').disabled = s === N - 1;
-  $('fill').style.width = ((s + 1) / N * 100) + '%';
-  [...track.querySelectorAll('.dot')].forEach(d => {
-    const i = +d.dataset.idx;
-    d.classList.toggle('done', i < s);
-    d.classList.toggle('now', i === s);
-  });
 }
-function go(dir) { const n = s + dir; if (n >= 0 && n < N) { s = n; render(dir); } }
+function go(dir) { const n = s + dir; if (!slideLoading && n >= 0 && n < N) { s = n; render(dir); } }
 $('prev').onclick = e => { e.stopPropagation(); go(-1); };
 $('next').onclick = e => { e.stopPropagation(); go(1); };
 $('tap-l').onclick = () => go(-1);
@@ -430,15 +450,9 @@ function triggerShare() {
 
 render(0, true);
 const firstSlideImage = $('slide-img-b');
-let batchLoadingStarted = false;
-function startBatchLoading() {
-  if (batchLoadingStarted) return;
-  batchLoadingStarted = true;
-  preloadBatch(1);
-}
 function firstSlideReady() {
   if (slideRequestId === 0) setLoading(false);
-  startBatchLoading();
+  preloadAround(0);
 }
 if (firstSlideImage.complete && firstSlideImage.naturalWidth) firstSlideReady();
 else {
