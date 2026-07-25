@@ -9,6 +9,22 @@
 <meta property="og:title" content="SHOCKING REALITY OF FROOTI !!">
 <meta property="og:description" content="You have to see this.">
 <meta property="og:image" content="/1.jpg">
+<link rel="preload" as="image" href="/1.jpg" fetchpriority="high">
+<script>
+  var GA_MEASUREMENT_ID = 'G-C6QX0Q3ZX5';
+
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+
+  var gaScript = document.createElement('script');
+  gaScript.async = true;
+  gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_MEASUREMENT_ID;
+  document.head.appendChild(gaScript);
+  gtag('js', new Date());
+  gtag('config', GA_MEASUREMENT_ID);
+
+  function gaEvent(name, params){ try { gtag('event', name, params); } catch (error) {} }
+</script>
 <style>
 * { box-sizing:border-box; }
 html, body { margin:0; height:100%; background:#141414; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; overscroll-behavior:none; }
@@ -21,8 +37,6 @@ html, body { margin:0; height:100%; background:#141414; font-family:-apple-syste
 #blur-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
   filter:blur(26px) brightness(.5); transform:scale(1.1); }
 #blur-img.hide { display:none; }
-.placeholder { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  color:rgba(255,255,255,.6); background:linear-gradient(135deg,#4a3b2a,#241c12); font-size:15px; }
 /* clickable button hotspots, positioned over the fitted image */
 #hotspots { position:absolute; z-index:20; display:none; }
 .hotspot { position:absolute; display:block; cursor:pointer; }
@@ -86,10 +100,9 @@ html, body { margin:0; height:100%; background:#141414; font-family:-apple-syste
 <body>
 <div id="app" data-transition="fade" data-fit="auto">
   <div id="stage">
-    <div class="placeholder">loading…</div>
     <img id="blur-img" class="hide" alt="" aria-hidden="true" draggable="false">
     <img id="slide-img-a" class="slide-layer" alt="" draggable="false">
-    <img id="slide-img-b" class="slide-layer" alt="" draggable="false">
+    <img id="slide-img-b" class="slide-layer" src="/1.jpg" fetchpriority="high" style="opacity:1" alt="" draggable="false">
     <div id="hotspots"></div>
     <div id="kbd-hint">
       <div class="keys"><div class="key up">▲</div><div class="key left">◀</div><div class="key down">▼</div><div class="key right">▶</div></div>
@@ -132,6 +145,19 @@ const $ = id => document.getElementById(id);
 FILES.forEach(f => { const im = new Image(); im.decoding = 'async'; im.src = src(f); });
 let s = 0;
 const N = SLIDES.length;
+
+let lastTrackedSlide = -1;
+function trackSlideView() {
+  if (s === lastTrackedSlide) return;
+  lastTrackedSlide = s;
+  gaEvent('slide_view', {
+    slide_number: s + 1,
+    slide_id: String(s + 1).padStart(2, '0'),
+    slide_file: SLIDES[s].img,
+    story_name: 'frooti_story'
+  });
+}
+
 const track = $('track');
 DOT_AT.forEach(i => {
   if (i < 0 || i >= N) return;
@@ -176,6 +202,7 @@ function showSlideImage(url, dir, t) {
     }
     activeLayer = backKey;
     positionHotspots();
+    trackSlideView();
   };
   resetLayer(back);
   back.style.zIndex = '6'; front.style.zIndex = '5';
@@ -218,10 +245,26 @@ function positionHotspots() {
     a.style.width = h.w + '%'; a.style.height = h.h + '%';
     if (h.share) {
       a.href = '#';
-      a.onclick = e => { e.preventDefault(); e.stopPropagation(); triggerShare(); };
+      a.onclick = e => {
+        e.preventDefault();
+        e.stopPropagation();
+        gaEvent('slide_cta_click', {
+          slide_number: s + 1,
+          button_name: 'share_story',
+          story_name: 'frooti_story'
+        });
+        triggerShare();
+      };
     } else {
       a.href = h.url || '#'; a.target = '_blank'; a.rel = 'noopener';
-      a.onclick = e => e.stopPropagation();
+      a.onclick = e => {
+        gaEvent('slide_cta_click', {
+          slide_number: s + 1,
+          button_name: 'clean_brands_whatsapp',
+          story_name: 'frooti_story'
+        });
+        e.stopPropagation();
+      };
     }
     layer.appendChild(a);
   });
@@ -273,6 +316,7 @@ function showCopied(msg) {
   copiedTimer = setTimeout(() => el.classList.remove('show'), 1800);
 }
 function doShare(k) {
+  gaEvent('share', { method: k, content_type: 'comic_story', item_id: 'frooti_story' });
   const u = location.href, eu = encodeURIComponent(u), et = encodeURIComponent(SHARE.title || document.title);
   if (k === 'copy') { if (navigator.clipboard) navigator.clipboard.writeText(u); showCopied(); return; }
   if (k === 'instagram') {
@@ -300,6 +344,7 @@ shareWidget.addEventListener('mouseleave', () => shareWidget.classList.remove('o
 function triggerShare() {
   const openMenu = () => shareWidget.classList.add('open');
   if (navigator.share) {
+    gaEvent('share', { method: 'native', content_type: 'comic_story', item_id: 'frooti_story' });
     try {
       const p = navigator.share({ title: SHARE.title || document.title, url: location.href });
       if (p && p.catch) p.catch(openMenu);
