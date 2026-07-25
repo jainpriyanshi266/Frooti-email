@@ -9,6 +9,8 @@
 <meta property="og:title" content="SHOCKING REALITY OF FROOTI !!">
 <meta property="og:description" content="You have to see this.">
 <meta property="og:image" content="/1.jpg">
+<link rel="preload" as="image" href="/.netlify/images?url=%2F1.jpg&amp;w=960&amp;q=72" fetchpriority="high" media="(max-width:640px)">
+<link rel="preload" as="image" href="/.netlify/images?url=%2F1.jpg&amp;w=1920&amp;q=78" fetchpriority="high" media="(min-width:641px)">
 <style>
 * { box-sizing:border-box; }
 html, body { margin:0; height:100%; background:#141414; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; overscroll-behavior:none; }
@@ -88,8 +90,8 @@ html, body { margin:0; height:100%; background:#141414; font-family:-apple-syste
   <div id="stage">
     <div class="placeholder">loading…</div>
     <img id="blur-img" class="hide" alt="" aria-hidden="true" draggable="false">
-    <img id="slide-img-a" class="slide-layer" alt="" draggable="false">
-    <img id="slide-img-b" class="slide-layer" alt="" draggable="false">
+    <img id="slide-img-a" class="slide-layer" alt="" draggable="false" decoding="async">
+    <img id="slide-img-b" class="slide-layer" alt="" draggable="false" decoding="async">
     <div id="hotspots"></div>
     <div id="kbd-hint">
       <div class="keys"><div class="key up">▲</div><div class="key left">◀</div><div class="key down">▼</div><div class="key right">▶</div></div>
@@ -123,13 +125,71 @@ const TRANSITIONS = ["fade","fade","fade","fade","fade","fade","fade","fade","fa
 const HOTSPOTS = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[{"x":49.581,"y":66.6068,"w":37.2905,"h":17.5982,"url":"https://wa.me/917499014868?text=I%20want%20Satvic%20Approved%20Clean%20Brands%20List."}],[{"x":35.0559,"y":53.4701,"w":45.5307,"h":21.8119,"url":"","share":true}]];      // per-slide array of {x,y,w,h,url} in %
 const FIT = "auto";           // 'cover' | 'contain'
 const SHARE = { title: "SHOCKING REALITY OF FROOTI !!" };
-const src = f => ASSET_OVERRIDE[f] || ('/' + f);
+const src = f => {
+  if (ASSET_OVERRIDE[f]) return ASSET_OVERRIDE[f];
+  const mobile = window.matchMedia('(max-width:640px)').matches;
+  const width = mobile ? 960 : 1920;
+  const quality = mobile ? 72 : 78;
+  return '/.netlify/images?url=' + encodeURIComponent('/' + f) + '&w=' + width + '&q=' + quality;
+};
 
 const SLIDES = FILES.map((f, i) => ({ img: f, t: TRANSITIONS[i] || 'fade', hotspots: HOTSPOTS[i] || [] }));
 
 const $ = id => document.getElementById(id);
-// preload + decode every slide up front so transitions are instant and never hitch mid-animation
-FILES.forEach(f => { const im = new Image(); im.decoding = 'async'; im.src = src(f); });
+const preloadedSlides = new Map();
+const priorityRank = { low: 0, auto: 1, high: 2 };
+function preloadSlide(index, priority) {
+  const slide = SLIDES[index];
+  if (!slide) return null;
+  if (preloadedSlides.has(index)) {
+    const existingImage = preloadedSlides.get(index);
+    const requestedPriority = priority || 'low';
+    if (priorityRank[requestedPriority] > priorityRank[existingImage.fetchPriority || 'auto']) {
+      existingImage.fetchPriority = requestedPriority;
+    }
+    return existingImage;
+  }
+  const image = new Image();
+  image.decoding = 'async';
+  image.fetchPriority = priority || 'low';
+  image.src = src(slide.img);
+  preloadedSlides.set(index, image);
+  return image;
+}
+
+function whenImageSettles(image, callback) {
+  if (image.complete) { callback(); return; }
+  const done = () => {
+    image.removeEventListener('load', done);
+    image.removeEventListener('error', done);
+    callback();
+  };
+  image.addEventListener('load', done, { once: true });
+  image.addEventListener('error', done, { once: true });
+}
+
+function preloadAhead(index) {
+  const nextImage = preloadSlide(index + 1, 'auto');
+  if (!nextImage) return;
+  const preloadFollowing = () => preloadSlide(index + 2, 'low');
+  whenImageSettles(nextImage, preloadFollowing);
+}
+
+let backgroundPreloadIndex = 4;
+function preloadRemainingSlides() {
+  const image = preloadSlide(backgroundPreloadIndex, 'low');
+  if (!image) return;
+  backgroundPreloadIndex += 1;
+  whenImageSettles(image, preloadRemainingSlides);
+}
+
+// Prioritize the opening four slides, then continuously fill the cache in story order.
+const urgentImages = [0, 1, 2, 3].map(index => preloadSlide(index, 'high'));
+let urgentImagesRemaining = urgentImages.length;
+urgentImages.forEach(image => whenImageSettles(image, () => {
+  urgentImagesRemaining -= 1;
+  if (urgentImagesRemaining === 0) preloadRemainingSlides();
+}));
 let s = 0;
 const N = SLIDES.length;
 const track = $('track');
@@ -149,7 +209,7 @@ function resetLayer(el) {
   el.getAnimations().forEach(a => a.cancel());
   el.style.transition = 'none'; el.style.transform = 'none'; el.style.clipPath = 'none';
 }
-function showSlideImage(url, dir, t) {
+function showSlideImage(url, dir, t, index) {
   $('hotspots').style.display = 'none';
   const backKey = activeLayer === 'a' ? 'b' : 'a';
   const front = $('slide-img-' + activeLayer);
@@ -176,10 +236,12 @@ function showSlideImage(url, dir, t) {
     }
     activeLayer = backKey;
     positionHotspots();
+    preloadAhead(index);
   };
   resetLayer(back);
   back.style.zIndex = '6'; front.style.zIndex = '5';
   front.style.opacity = '1'; back.style.opacity = '0';
+  back.fetchPriority = index < 4 ? 'high' : 'auto';
   back.src = url;
   // wait until the image is actually decoded before animating — avoids mid-transition stutter
   if (back.decode) { back.decode().then(run).catch(run); }
@@ -230,9 +292,7 @@ window.addEventListener('resize', positionHotspots);
 
 function render(dir) {
   const sl = SLIDES[s];
-  showSlideImage(src(sl.img), dir || 0, sl.t || 'fade');
-  const nxt = SLIDES[s + 1];
-  if (nxt && nxt.img) { const p = new Image(); p.src = src(nxt.img); }
+  showSlideImage(src(sl.img), dir || 0, sl.t || 'fade', s);
   $('kbd-hint').classList.toggle('show', s === 0);
   $('tap-hint').classList.toggle('show', s === 0);
   $('prev').disabled = s === 0;
